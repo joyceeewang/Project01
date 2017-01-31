@@ -204,25 +204,15 @@ int negate(int x) {
  *   Max ops: 12
  *   Rating: 4 
  */
-int bang(int x) {
-// x |= x >> 1;
-// x |= x >> 2;
-// x |= x >> 4;
-// x |= x >> 8;
-// x |= x >> 16;
-
-// x ^= 1;   // Toggle the bottom bit - now 0 if any bit set.
-// x &= 1;   // Clear the unwanted bits to leave 0 or 1.
-
-//   return x;
-  x = 0; 
-  int a = (x >> 31); 
-  printf("a is %#x \n", a);
-  int b =  (~x + 1) >> 31; 
-  printf("b is %#x \n", b);
-  int c = (a | b) + 1; 
-  printf("c is %#x \n", c);
-  return 2; 
+int bang(int x) { 
+  int MSB = x >> 31;  
+  //printf("MSB is %#x \n", MSB);
+  int negate = ~x + 1; 
+  int MSBn =  negate >> 31; 
+  //printf("MSBn is %#x \n", MSBn);
+  int bang = (MSB | MSBn) + 1; 
+  //printf("bang is %#x \n", bang);
+  return bang; 
 
   // return ((x >> 31) | ((~x + 1) >> 31)) + 1;
 }
@@ -268,34 +258,30 @@ int isPositive(int x) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) { // sat
-  //check sign 
-  // printf("x is %#x, y is %#x \n", x, y);
-  // int xXORy = x ^ y; 
-  // printf("%#x \n", xXORy);
-  // int a = xXORy & tmin(); 
-  // int sign = !a; // 0 if diff sign, 1 if same sign
 
-  //return 2;
+	// checks if signs of x and y are same or different
+	int sign = x ^ y; 
+	// get MSB of sign: 0 if same sign, 1 if diff sign
+	int signMSB = (sign >> 31) & 1; 
 
-   int sign, isLess, dif, equal, isLessorEqual;
+	// -x+y
+	int diff = (~x+1) + y; 
+	// if diff is pos or 0, <=; if diff is neg, >
+	
+	// get sign of diff
+	int diffSign = (diff >> 31) & 1; 
+	// diffSign 0 if <=, diffSign 1 if >
 
-  sign = x ^ y;
-  isLess = ~sign;
-  dif = y + (~x + 1);
 
-  equal = !dif;
+	// make mask based on sign of x: 0000... if pos, 11111 if neg
+   	int mask = ((1<<31) & x) >> 31;
+ 
+	int a = signMSB & mask;
+	// a is 1 when mask is 111.... (x is neg) and signMSB is 1 (x and y are different signs) (<=); else 0....
+	int b = !diffSign & !signMSB; 
+	// b is 1 when diffSign is 0 (<=) and when signMSB is 0 (x and y same sign); else 0
 
-  sign = sign & x;
-  
-  dif = ~dif;
-  
-  isLess = isLess & dif;
-  isLess = isLess | sign;
-  isLess = isLess & (1 << 31);
-
-  isLessorEqual = (!!isLess) | (equal);
-
-  return isLessorEqual;
+	return a | b;
 }
 /*
  * multFiveEighths - multiplies by 5/8 rounding toward 0.
@@ -311,59 +297,26 @@ int isLessOrEqual(int x, int y) { // sat
 int multFiveEighths(int x) { 
     int multFive = (x << 2) + x; // multiply by 5
 
-    int denom = (1 << 3); 
+    int denomEight = (1 << 3); 
     //printf("denom is %#x \n", denom);
-    int b = ~0; // 1111......
+    int b = (1<<31)>>31;; // 1111......
     //printf("b is %#x \n", b);
-    int mask = denom+b;
+    int c = denomEight+b;
     //printf("mask is %#x \n", mask); 
 
     // // Use & operator on mask and sign bit of x 
-    int sign = multFive>> 31; 
+    int sign = multFive >> 31; 
     // printf("c is %#x \n", c);
-    int equalizer = sign & mask;
+    int d = sign & c;
     // printf("eq is %#x \n", equalizer); 
 
     // // Adds 1 if x was originally negative
     // // Adds 0 if x was originally positive
-    int ans = (multFive + equalizer); 
+    int ans = multFive + d; 
     // printf("ans is %#x \n", ans);
-    int divide = ans >> 3; 
+    int divideEight = ans >> 3; 
     // printf("ans2 is %#x \n", ans2); */
-    return divide;
-
-
-
-  // int d = divpwr2(multFive,3); 
-  // return d; 
-
-  // int b = a >> 31; 
-  // int c = 7 & b; // ???
-  // int d = (a + c) >> 3; // divide by 8
-  // return d;
-
-  // int denom = (1 << 3); 
-  //   //printf("denom is %#x \n", denom);
-  //   int b = (1<<31)>>31; // 1111......
-  //   //printf("b is %#x \n", b);
-  //   int mask = denom+b;
-  //   //printf("mask is %#x \n", mask); 
-
-  //   // // Use & operator on mask and sign bit of x 
-  //   int sign = x >> 31; 
-  //   // printf("c is %#x \n", c);
-  //   int equalizer = sign & mask;
-  //   // printf("eq is %#x \n", equalizer); 
-
-  //   // // Adds 1 if x was originally negative
-  //   // // Adds 0 if x was originally positive
-  //   int ans = (x + equalizer); 
-  //   // printf("ans is %#x \n", ans);
-  //   int divide = ans >> 3; 
-  //   // printf("ans2 is %#x \n", ans2); */
-
-    //return multFive*divide; 
-    
+    return divideEight;    
 }
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
@@ -373,82 +326,17 @@ int multFiveEighths(int x) {
  *   Max ops: 15
  *   Rating: 2
  */
-int divpwr2(int x, int n) { //sun
-    // // x = -16; 
-    // // n = 4; 
-    // printf("x is %#x, n is %#x \n", x, n); 
-    // //int ans = x >> n;
-    // //printf("ans is %#x \n", ans); 
-
-
-    // int sign = x>>31; // 111... if neg x, 000... if pos x; 
-
-    // printf("sign is %#x \n", sign);
-    
-    // int xORy = x ^ sign; // negate if neg x, same if pos x; 
-    // printf("xORy is %#x \n", xORy);
-    
-    // // getting 1 (for neg) or 0 (for pos)
-    // int add = sign << 1; 
-    // printf("add is %#x \n", add);
-    // add = add ^ sign; // 0001 if neg x, 0000 if pos x
-    // printf("add is %#x \n", add);
-    // int posNum = xORy + add; // pos num
-    // printf("posNum is %#x \n", posNum); 
-    // // ^ turns negative into positive number so divides properly
-
-    // // divison
-    // int divided = posNum >> n; 
-    // printf("divided is %#x \n", divided); 
-
-    
-
-    // // change negative to negative
-    // int ans = (divided ^ sign) + add; 
-    // printf("ans is %#x \n", ans); 
-
-    // return ans; 
-    //return divided; 
-
-
-    // test if x is neg
- 
-    //return ans; 
-
-
-     // printf("x is %#x, n is %#x \n", x, n); 
-     // int denom = 1<<n; 
-     // printf("denom is %#x \n", denom); 
-     // int a = ~0; 
-     // printf("a is %#x \n", a); 
-
-     // return 2;
-    // x = 15; 
-    // n = 1; 
-    //printf("x is %#x, n is %#x \n", x, n); 
-   
-
+int divpwr2(int x, int n) { 
     int denom = (1 << n); 
-    //printf("denom is %#x \n", denom);
     int b = (1<<31)>>31; // 1111......
-    //printf("b is %#x \n", b);
-    int mask = denom+b;
-    //printf("mask is %#x \n", mask); 
+    int c = denom+b; 
 
-    // // Use & operator on mask and sign bit of x 
-    int sign = x >> 31; 
-    // printf("c is %#x \n", c);
-    int equalizer = sign & mask;
-    // printf("eq is %#x \n", equalizer); 
+    int sign = x >> 31; // 0000... if pos, 11111... if neg 
+    int d = sign & c; // d = 0 if pos, d = c if neg
 
-    // // Adds 1 if x was originally negative
-    // // Adds 0 if x was originally positive
-    int ans = (x + equalizer); 
-    // printf("ans is %#x \n", ans);
+    int ans = (x + d); 
     int divide = ans >> n; 
-    // printf("ans2 is %#x \n", ans2); */
     return divide;
-
 }
 /*
  * ilog2 - return floor(log base 2 of x), where x > 0
@@ -457,7 +345,9 @@ int divpwr2(int x, int n) { //sun
  *   Max ops: 90
  *   Rating: 4
  */
-int ilog2(int x) { //mon
+int ilog2(int x) { 
+	// calcaulate log
+
   return 2;
 }
 /*
@@ -472,12 +362,76 @@ int ilog2(int x) { //mon
  */
 int satAdd(int x, int y) { //mon
   //return 2;
-  int sum, overflow_mask, sum_, max;
-  sum = x+y;
-  overflow_mask = ((sum^x) & (sum^y))>>31; // all ones  if overflow , all zeros if not
-  sum_ = sum & ~overflow_mask;       // all zeros if overflow , sum       if not
-  max = overflow_mask & ((1<<31) + (sum>>31)); // 10000... + either 0 or -1
-  return sum_ | max;
+  // int sum, overflow_mask, sum_, max;
+  // sum = x+y;
+  // overflow_mask = ((sum^x) & (sum^y))>>31; // all ones  if overflow , all zeros if not
+  // sum_ = sum & ~overflow_mask;       // all zeros if overflow , sum       if not
+  // max = overflow_mask & ((1<<31) + (sum>>31)); // 10000... + either 0 or -1
+  // return sum_ | max;
+
+ //  	int sx = (x>>31)&0x1;
+	// int sy = (y>>31)&0x1;
+	// int sxay = ((x+y)>>31)&0x1;
+	// int answer1 = ((((sx^sy)+(!((sx^sy)|(sxay^sx))))<<31)>>31)&(x+y);
+	// int answer2 = ((((!(sx^sy))&(sx^sxay))<<31)>>31)&(((0x1<<31)+(~1)+1)+sx);
+	// return answer1|answer2;
+//return 2; 
+	/*int sum = x + y; 
+
+	//same as addOk
+  int sum = x + y;
+  int xsign = x >> 31;
+  int ysign = y >> 31;
+  int xysign = sum >> 31;
+  int overflow = (~(xsign ^ ysign)) & (xsign ^ xysign);
+  
+  //the positive overflow occured if the sign of x is negative and overflow occured
+  int positive = overflow & (~(xsign ^ 0));
+  
+  //negative overflow occured if the sign of x is positive and overflow occured
+  int negative = ~(overflow & (~(xsign^0)));
+  
+  //1000000000000000000000000
+  int minimum = 1 << 31;
+  
+  //0111111111111111111111111
+  //largest positive number
+  int maximum = ~minimum;
+  
+  int final = (~overflow & sum) | (overflow & ((positive & maximum) | (negative & minimum)));
+  return final; */
+
+/*In order to have a overflow, there must be an extra bit. 
+	* Case 1: 1....+1.... and yield an overflow, then the result could be (1)0....or (1)1...
+	* Case 2: 1....+0....no overflow
+	* Case 3: 0 + 0 -> postive overflow
+	*/
+	int overNegResult, overPosResult;
+	int sum = x + y;
+	int tmin = 1 << 31; 
+	int xMSB = x >> 31; 
+	int yMSB = y >> 31; 
+	int sumMSB = sum >> 31; 
+	// testOF
+	int check = (sumMSB ^ xMSB ) & (sumMSB ^ yMSB); // 111... if overflow , 000.... if not
+	//return 2; 
+	sum = sum & ~check; // 0... if OF, x+y if no OF
+
+	// int max = check & ((1<<31) + sumMSB); // 10000... + either 0 or -1
+ //    max = overflow_mask & ((1<<31) + (sum>>31)); // 10000... + either 0 or -1
+ //    return sum | max;
+
+	// sum  = sum & ~check; // sum = 0 if there's overflow (or the sum is 0), sum = x+y if no overflow
+	// // (((1 << 31)& check)) returns 0x80000 when check is 111
+	// // also need to check whether the sum is neg or pos overflow (x >> 31 is all 1s iff first digit of x is 1)
+	
+	// overNegResult = (((1 << 31) & check))& (x >>31);
+	// overPosResult = (((~(1 << 31)) & check))&(~(x >> 31));
+ 	// return sum | overNegResult| overPosResult;
+
+ 	overNegResult = (tmin & check) & (xMSB);
+	overPosResult = (((~(tmin)) & check)) & (~xMSB);
+ 	return sum | overNegResult| overPosResult;
 }
 /* 
  * float_neg - Return bit-level equivalent of expression -f for
@@ -491,7 +445,7 @@ int satAdd(int x, int y) { //mon
  *   Rating: 2
  */
 unsigned float_neg(unsigned uf) { //mon
- //return 2;
+  //return 2;
   //uf = 0xfefea4cb; 
   // uf =0x80015b1a; 
   // printf("uf is %#x \n", uf);
